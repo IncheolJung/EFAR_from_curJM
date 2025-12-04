@@ -196,45 +196,86 @@ void readCurJM (const std::string& fname, currentData& curData) {
 }
 
 
-int readCurJM_SGF (const std::string& fname, currentData& curData) {
-  std::ifstream file(fname);
+// int readCurJM_SGF (const std::string& fname, currentData& curData) {
+//   std::ifstream file(fname);
 
-  if (!file.is_open()) {
-    std::cerr << "[!] Could not open file: " + fname << "\n";
-    return 1;
-  }
+//   if (!file.is_open()) {
+//     std::cerr << "[!] Could not open file: " + fname << "\n";
+//     return 1;
+//   }
 
-  if (curData.size() != 0) {
-    std::cerr << "curData must be empty but has size " + curData.size() << "\n";
-    return 1;
-  }
+//   if (curData.size() != 0) {
+//     std::cerr << "curData must be empty but has size " + curData.size() << "\n";
+//     return 1;
+//   }
 
-  int num_line = 0;
-  std::string line;
-  std::array<myComplex, 3> cur_data = {0, 0, 0};  // x, y, z
-  while (std::getline(file, line)) {
-  // for (int l=0; l<20; ++l) {
-  //   std::getline(file, line);
-  //   std::cout << line << "\n";
-    if (num_line%10==9) {
-      // std::cout << cur_data[0] << " " << cur_data[1] << " " << cur_data[2] << "\n";
-      for (int i=0; i<3; ++i) cur_data[i] /= 3;
-      curData.push_back(CVec3(cur_data[0], cur_data[1], cur_data[2]));
-      // curData[num_line/10] = CVec3(cur_data[0], cur_data[1], cur_data[2]);
-      cur_data = {0, 0, 0};
-    } else {
-      std::istringstream iss(line);
-      myFloat re, im;
-      iss >> re >> im;
-      cur_data[num_line%10%3] += myComplex(re, im);
-      // cur_data[num_line%10/3] += myComplex(re, im);
+//   int num_line = 0;
+//   std::string line;
+//   std::array<myComplex, 3> cur_data = {0, 0, 0};  // x, y, z
+//   while (std::getline(file, line)) {
+//   // for (int l=0; l<20; ++l) {
+//   //   std::getline(file, line);
+//   //   std::cout << line << "\n";
+//     if (num_line%10==9) {
+//       // std::cout << cur_data[0] << " " << cur_data[1] << " " << cur_data[2] << "\n";
+//       for (int i=0; i<3; ++i) cur_data[i] /= 3;
+//       curData.push_back(CVec3(cur_data[0], cur_data[1], cur_data[2]));
+//       // curData[num_line/10] = CVec3(cur_data[0], cur_data[1], cur_data[2]);
+//       cur_data = {0, 0, 0};
+//     } else {
+//       std::istringstream iss(line);
+//       myFloat re, im;
+//       iss >> re >> im;
+//       cur_data[num_line%10%3] += myComplex(re, im);
+//       // cur_data[num_line%10/3] += myComplex(re, im);
+//     }
+//     // std::cout << cur_data[0] << " " << cur_data[1] << " " << cur_data[2] << "\n";
+//     num_line++;
+//   }
+
+//   file.close();
+
+//   return 0;
+
+// }
+
+struct Complex64 {
+    float re;
+    float im;
+};
+
+// read binary
+int readCurJM_SGF(const std::string& fname, currentData& curData)
+{
+    std::ifstream file(fname, std::ios::binary);
+    if (!file.is_open()) {
+        std::cerr << "[!] Could not open file: " << fname << "\n";
+        return 1;
     }
-    // std::cout << cur_data[0] << " " << cur_data[1] << " " << cur_data[2] << "\n";
-    num_line++;
-  }
 
-  file.close();
+    if (!curData.empty()) {
+        std::cerr << "curData must be empty but has size " << curData.size() << "\n";
+        return 1;
+    }
 
-  return 0;
+    while (true) {
+        Complex64 xyz[3];
 
+        // Try to read 3 float = one vector
+        file.read(reinterpret_cast<char*>(xyz), 3 * sizeof(Complex64));
+        if (!file) {
+            // Either EOF or read error
+            break;
+        }
+
+        // Your data is real-only, put into complex<float>
+        CVec3 v(myComplex(xyz[0].re, xyz[0].im),
+                myComplex(xyz[1].re, xyz[1].im),
+                myComplex(xyz[2].re, xyz[2].im));
+
+        curData.push_back(v);
+    }
+
+    file.close();
+    return 0;
 }

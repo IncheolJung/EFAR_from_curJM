@@ -156,7 +156,7 @@ void computeFarField(
   int Ndir = inData.size;
 
   cout << "\n" << string(50, '=') << "\n";
-  cout << "Initializing Monostatic Farfield Computation\n (Adjacent measurement)" << "\n";
+  cout << "Initializing Monostatic Farfield Computation\n (Adjoint measurement)" << "\n";
   cout << string(50, '=') << "\n\n";
   string header = "Theta(DEG) Phi(DEG) Cpol(Re) Cpol(Im) Xpol(Re) Xpol(Im)";
   cout << header << "\n";
@@ -242,8 +242,11 @@ void computeFarField(
       myComplex MdotH_x  = dot(Mtri[t], h_polX);
 
       // integrand: (-j ω μ0 J·E_inc - j k0 M·H_inc) * area * e^{j k rhat·r'}
-      local_co += ( -jj * omega * MU0 * JdotE_co - jj * k0 * MdotH_co ) * area[t] * ejk;
-      local_x  += ( -jj * omega * MU0 * JdotE_x  - jj * k0 * MdotH_x  ) * area[t] * ejk;
+      // local_co += ( -jj * omega * MU0 * JdotE_co - jj * k0 * MdotH_co ) * area[t] * ejk;
+      // local_x  += ( -jj * omega * MU0 * JdotE_x  - jj * k0 * MdotH_x  ) * area[t] * ejk;
+      // M is pre-sclaed (k0/(omega*MU0))
+      local_co += -jj * omega * MU0 * ( JdotE_co + MdotH_co ) * area[t] * ejk;
+      local_x  += -jj * omega * MU0 * ( JdotE_x  + MdotH_x  ) * area[t] * ejk;
     }
 
     // safe reduction into global sums
